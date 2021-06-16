@@ -1,11 +1,9 @@
 before_install:
-  - rm -rf node_modules/
   - npm i -g npm@'6.14.13'
 
 install:
-  - npm install
-  - npm install express
-  - npm install -S documenu
+  - rm -rf node_modules && npm install
+
 
 language: node_js
 node_js:
