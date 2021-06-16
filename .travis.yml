@@ -9,4 +9,4 @@ install:
 
 language: node_js
 node_js:
-  - node
+  - 14
