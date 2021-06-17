@@ -1,6 +1,6 @@
 //server.js
 const express = require('express'),
-      server = express()
+      server = express();
 
 //const app = express();
 //app.use(express.static('public')); /* this line tells Express to use the public folder as our static folder from which we can serve static files*/
@@ -24,22 +24,22 @@ server.get('/',(request,response)=>{
 //});
 
 server.get('/map',(request,response)=>{
-    req_data = request.query
+    req_data = request.query;
     switch(req_data['method']) {
     case 'setCoordinates':
-        search.setCoordinates(req_data['param1'],req_data['param2'])
+        search.setCoordinates(req_data['param1'],req_data['param2']);
         break;
     case 'setDistance':
-        search.setDistance(req_data['param1'])
+        search.setDistance(req_data['param1']);
         break;
     case 'setCuisine':
-        search.setCuisine(req_data['param1'])
+        search.setCuisine(req_data['param1']);
         break;
     case 'setCity':
-        search.setCity(req_data['param1'],req_data['param2'])
+        search.setCity(req_data['param1'],req_data['param2']);
         break;
     case 'setZipCode':
-        search.setZipCode(req_data['param1'])
+        search.setZipCode(req_data['param1']);
         break;
 
     default:
