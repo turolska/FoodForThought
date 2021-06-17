@@ -6,8 +6,8 @@
 // Mostly tested, but still a WIP, expect errors.
 // In near future will add menu item searches.
 
-const documenu = require('documenu')
-documenu.configure('b1c43411dbab1f3fa1c58961bab4013a')
+const documenu = require('documenu');
+documenu.configure('b1c43411dbab1f3fa1c58961bab4013a');
 
 // Combines restaurant data from search result1 and search result2, removing duplicate restaurants
 function combineData(result1, result2) {
@@ -52,7 +52,7 @@ class RestaurantSearch {
 				let fields_result = await documenu.Restaurants.searchFields(this.params_fields);
 				data = combineData(geo_result, fields_result);
 			} else {
-				let zip_count = {}
+				let zip_count = {};
 				let max_count = -1;
 				let zip;
 				for (let i in geo_result.data) {
