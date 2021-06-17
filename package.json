@@ -7,7 +7,7 @@
     "jshint": "^2.6.0"
   },
   "scripts": {
-    "test": "jshint server.js && jshint RestaurantSearch.js && test1.js"
+    "test": "jshint server.js && jshint RestaurantSearch.js && jshint test1.js"
   },
   "dependencies": {
     "documenu": "^1.1.0",
