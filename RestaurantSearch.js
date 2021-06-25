@@ -7,7 +7,7 @@
 // In near future will add menu item searches.
 
 const documenu = require('documenu');
-documenu.configure('b1c43411dbab1f3fa1c58961bab4013a');
+documenu.configure('53cda3908899847343493dc14d62fd2c');
 
 // Combines restaurant data from search result1 and search result2, removing duplicate restaurants
 function combineData(result1, result2) {
