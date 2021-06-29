@@ -100,6 +100,23 @@ async function searchMenuItem(params) {
 	return data;
 }
 
+// Searches radius around coordinates first, then attempts to find zip code and searches by zip
+async function searchGeoFirst(params_geo, params_fields) {
+	let geo_data = (await documenu.Restaurants.searchGeo(params_geo)).data;
+	let fields_data = [];
+	if (params_fields.hasOwnProperty('zip_code') || params_fields.hasOwnProperty('address')) {
+		fields_data = (await documenu.Restaurants.searchFields(params_fields)).data;
+	} else {
+		let zip = findZip(geo_data);
+		if (zip !== undefined) {
+			params_fields.zip_code = zip;
+			fields_data = (await documenu.Restaurants.searchFields(params_fields)).data;
+			delete params_fields.zip_code;
+		}
+	}
+	return combineData(geo_data, fields_data);
+}
+
 class RestaurantSearch {
 	
 	// Instantiation
@@ -136,29 +153,15 @@ class RestaurantSearch {
 				item_data = await searchMenuItem(this.params_item);
 				if (!this.has_cuisine) {
 					this.setCuisine(findCuisine(item_data));
-					geo_data = (await documenu.Restaurants.searchGeo(this.params_geo)).data;
+					data = await searchGeoFirst(this.params_geo, this.params_fields);
 					this.setCuisine();
 				} else {
-					geo_data = (await documenu.Restaurants.searchGeo(this.params_geo)).data;
+					data = await searchGeoFirst(this.params_geo, this.params_fields);
 				}
 			} else {
-				geo_data = (await documenu.Restaurants.searchGeo(this.params_geo)).data;
+				data = await searchGeoFirst(this.params_geo, this.params_fields);
 			}
-			let item_geo_data = combineData(item_data, geo_data);
-			if (this.has_city_or_zip) {
-				let fields_data = (await documenu.Restaurants.searchFields(this.params_fields)).data;
-				data = combineData(item_geo_data, fields_data);
-			} else {
-				let zip = findZip(item_geo_data);
-				if (zip !== undefined) {
-					this.setZipCode(zip);
-					let fields_data = (await documenu.Restaurants.searchFields(this.params_fields)).data;
-					data = combineData(item_geo_data, fields_data);
-					this.setZipCode();
-				} else {
-					data = item_geo_data.slice(0, item_geo_data.length);
-				}
-			}
+			data = combineData(item_data, data);
 		} else {
 			let fields_data = (await documenu.Restaurants.searchFields(this.params_fields)).data;
 			if (this.has_city_or_zip) {
