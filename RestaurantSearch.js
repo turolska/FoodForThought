@@ -63,22 +63,35 @@ function findCoordinates(data) {
 	return coordinates;
 }
 
-// Returns most common cuisine from restaurant data
-function findCuisine(data) {
+// Returns most common cuisine from restaurant data based on menu item
+async function findCuisine(menu_item) {
+	let params = {
+		lat : 37.558205241770764,
+		lon : -121.97332967874024,
+		distance : 100,
+		size : 100,
+		page : 1,
+		search : menu_item
+	}
+	let search_data = (await documenu.MenuItems.searchGeo(params)).data;
+	let codes = new Set();
 	let cuisine_count = {};
 	let max_count = -1;
 	let cuisine;
-	for (let i in data) {
-		for (let j in data[i].cuisines) {
-			if (data[i].cuisines[j] != '') {
-				if (cuisine_count.hasOwnProperty(data[i].cuisines[j])) {
-				cuisine_count[data[i].cuisines[j]] += 1;
-				} else {
-					cuisine_count[data[i].cuisines[j]] = 1;
-				}
-				if (cuisine_count[data[i].cuisines[j]] > max_count) {
-					max_count = cuisine_count[data[i].cuisines[j]];
-					cuisine = data[i].cuisines[j];
+	for (let i in search_data) {
+		if (!codes.has(search_data[i].restaurant_id)) {
+			codes.add(search_data[i].restaurant_id);
+			for (let j in search_data[i].cuisines) {
+				if (search_data[i].cuisines[j] != '') {
+					if (cuisine_count.hasOwnProperty(search_data[i].cuisines[j])) {
+						cuisine_count[search_data[i].cuisines[j]] += 1;
+					} else {
+						cuisine_count[search_data[i].cuisines[j]] = 1;
+					}
+					if (cuisine_count[search_data[i].cuisines[j]] > max_count) {
+						max_count = cuisine_count[search_data[i].cuisines[j]];
+						cuisine = search_data[i].cuisines[j];
+					}
 				}
 			}
 		}
@@ -143,7 +156,8 @@ class RestaurantSearch {
 	}
 	
 	// Conducts search and returns data as an array of restaurant objects based on search parameters
-	// Use '(RestaurantSearch object).search().then(res => {console.log(res);});' to see print array
+	// Give 'true' argument to see print array OR
+	// use '(RestaurantSearch object).search().then(res => {console.log(res);});' to see print array
 	async search() {
 		let data;
 		if (this.has_coord) {
@@ -152,7 +166,7 @@ class RestaurantSearch {
 			if (this.has_menu_item) {
 				item_data = await searchMenuItem(this.params_item);
 				if (!this.has_cuisine) {
-					this.setCuisine(findCuisine(item_data));
+					this.setCuisine(await findCuisine(this.params_item['search']));
 					data = await searchGeoFirst(this.params_geo, this.params_fields);
 					this.setCuisine();
 				} else {
@@ -167,10 +181,10 @@ class RestaurantSearch {
 			if (this.has_city_or_zip) {
 				let coordinates = findCoordinates(fields_data);
 				if (coordinates !== undefined) {
+					let geo_data;
 					this.setCoordinates(coordinates['lat'], coordinates['lon']);
 					if (this.has_menu_item) {
 						let item_data = await searchMenuItem(this.params_item);
-						let geo_data;
 						if (!this.has_cuisine) {
 							this.setCuisine(findCuisine(item_data));
 							fields_data = (await documenu.Restaurants.searchFields(this.params_fields)).data;
@@ -197,7 +211,7 @@ class RestaurantSearch {
 	}
 	
 	// Sets coordinates of area to search, resets when given no arguments
-	setCoordinates(lat = undefined, lon = undefined) {
+	setCoordinates(lat, lon) {
 		if (lat === undefined || lon === undefined) {
 			delete this.params_geo.lat;
 			delete this.params_geo.lon;
