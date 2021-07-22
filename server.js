@@ -1,13 +1,14 @@
 //server.js
 const express = require('express'),
-      server = express();
+      server = express()
 
 //const app = express();
 //app.use(express.static('public')); /* this line tells Express to use the public folder as our static folder from which we can serve static files*/
 server.use(express.static('public'));
 
-var RestaurantSearch = require('./RestaurantSearch.js');
-let search = new RestaurantSearch();
+var PS = require('./ParkSearch.js');
+let search = new PS();
+search.init();
 
 //setting the port.
 server.set('port', process.env.PORT || 3000);
@@ -24,26 +25,19 @@ server.get('/',(request,response)=>{
 //});
 
 server.get('/map',(request,response)=>{
-    req_data = request.query;
-    switch(req_data.method) {
-    case 'setCoordinates':
-        search.setCoordinates(req_data.param1,req_data.param2);
-        break;
-    case 'setDistance':
-        search.setDistance(req_data.param1);
-        break;
-    case 'setCuisine':
-        search.setCuisine(req_data.param1);
-        break;
-    case 'setCity':
-        search.setCity(req_data.param1,req_data.param2);
-        break;
-    case 'setZipCode':
-        search.setZipCode(req_data.param1);
-        break;
+    req_data = request.query
+    switch(req_data['method']) {
+        case 'addTerm':
+            console.log(req_data['param1']);
+            req_data['param1'].forEach(element => search.addTerm(element));
+            break;
+        case 'addState':
+            console.log(req_data['param1']);
+            req_data['param1'].forEach(element => search.addState(element));
+            break;
 
-    default:
-    // code block
+        default:
+        // code block
     }
     
     search.search().then(res => {response.json(res);});
@@ -54,8 +48,3 @@ server.listen(3000,()=>{
  console.log('Express server started at port 3000');
 });
 
-
-
-
-
-//.then(res => {map.addMarkers()});
