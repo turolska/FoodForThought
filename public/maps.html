@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Add Map</title>
-
+    <!--<link rel="stylesheet" href="slideshow_style.css"> -->
     <style type="text/css">
       /* Set the size of the div element that contains the map */
       #map {
@@ -13,30 +13,20 @@
       }
     </style>
     <script src="map_code.js"></script>
+    
     <script type="text/javascript">
-        var oldDistance = null;
-        var upDistance = false;
 
         
-      function getData(cuisine,budget, distance){
+      function getData(states,terms){
           var method;
           var param;
-          var price = 3;
-          if(upDistance){
-              method = "setDistance";
-              param = distance;
+          if(states[0] != null){
+              method = "addState";
+              param = states;
           }
           else{
-              method = "setCuisine";
-              param = cuisine;
-              if (budget != null){
-                  if(budget < 10){
-                      price = 1;
-                  }
-                  else if(budget < 20){
-                      price = 2;
-                  }
-              }
+              method = "addTerm";
+              param = terms;
           }
 
           $.ajax({
@@ -44,7 +34,7 @@
           method : 'GET',
           data: { method: method, param1: param },
           success : function(data){
-             addMarkers(data,price);
+             addMarkers(data);
           },
         
           error: function(err){
@@ -54,36 +44,25 @@
       
     }
     function preSendhandler(event) {
-          var cuisine = String(event.data.context.skills['main skill'].user_defined.cuisine);
-          cuisine = cuisine.replaceAll(' ', '');
-          cuisines = cuisine.split('||');
-          let arr = []
-          cuisines.forEach(function (element) {if (element.length > 0) arr.push(element);});
-          cuisine = arr[0];
-          
-          //var cuisine = "mexican"
-          var budget = event.data.context.skills['main skill'].user_defined.budget;
-          var distance = event.data.context.skills['main skill'].user_defined.distance;
-          if (distance != oldDistance){
-              upDistance = true;
-              oldDistance = distance;
-          }
-          else{
-              upDistance = false;
-          }
-          getData(cuisine, budget, distance)
+        if (event.data.context.skills['main skill'].user_defined != null){
+          var states = event.data.context.skills['main skill'].user_defined.state;
+          states = mapStateInits(states);
+          var terms = event.data.context.skills['main skill'].user_defined.term;
+
+          getData(states, terms);
+        }
     }
     
     window.watsonAssistantChatOptions = {
-        integrationID: "90bbb400-4499-47c8-8558-8fa9e185dfb8", // The ID of this integration.
+        integrationID: "051ea14a-5d82-4b2a-a97a-1118b9ebea8c", // The ID of this integration.
         region: "us-south", // The region your integration is hosted in.
         serviceInstanceID: "8d39e686-c228-4a6e-aeaa-51441e1a092e", // The ID of your service instance.
-            onLoad: function(instance) {
+        onLoad: function(instance) {
               // Subscribe to the "pre:send" event.
               instance.on({ type: "pre:receive", handler: preSendhandler });
   
               instance.render();
-            }
+        }
       };
       setTimeout(function(){
         const t=document.createElement('script');
@@ -96,7 +75,7 @@
 
   </head>
   <body>
-    <h3>Food for Thought</h3>
+    <h3>Find a National Park</h3>
     <!--The div element for the map -->
     <div id="map"></div>
     <!--<button onclick="getData()">Try it</button>-->
@@ -105,6 +84,7 @@
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5Nm3cFCJDL8W3Q9bo2-dq_40eV61REO8&callback=initMap&libraries=&v=weekly"
       async
     ></script>
+    <script src="slideshow.js"></script>
     
   </body>
 </html>
