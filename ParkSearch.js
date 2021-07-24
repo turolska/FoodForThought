@@ -1,14 +1,14 @@
 const axios = require('axios');
-const api_key = 'FnvISgexajVrZlaZlIPvUZFFqNCe8aknAvu6SI4F'
+const api_key = 'MZ7LR9VrIgPKqVTqbmvzPMNKxr5pXzIYJOuFI7W8'
 
 const nps = axios.create({
 	baseURL : 'https://developer.nps.gov/api/v1',
-	timeout : 2500,
-	params : {
-		limit : 25,
-		api_key : api_key
-	}
+	timeout : 2500
 });
+nps.defaults.params = {
+	limit : 100,
+	api_key : api_key
+}
 
 async function makeReq(method = null, params = {}) {
 	let result = null;
@@ -35,20 +35,22 @@ function stringArraySearch(str, array) {
 	return result;
 }
 
-/*
 function combineData(data1, data2) {
 	let inBoth = [];
 	let inOne = [];
 	let inBothCodes = new Set();
 	for (let i in data1) {
+		let added = false;
 		for (let j in data2) {
 			if (data1[i].parkCode == data2[j].parkCode) {
 				inBoth.push(data1[i]);
 				inBothCodes.add(data1[i].parkCode);
+				added = true;
 				break;
-			} else {
-				inOne.push(data1[i]);
 			}
+		}
+		if (!added) {
+			inOne.push(data1[i]);
 		}
 	}
 	for (let i in data2) {
@@ -56,30 +58,32 @@ function combineData(data1, data2) {
 			inOne.push(data2[i]);
 		}
 	}
-	let result = inBoth.concat(inOne)
-	console.log(data1.length + '+' + data2.length + '=' + result.length);
-	return result;
+	return inBoth.concat(inOne);
 }
-*/
 
-function combineData(data1, data2) {
+function checkErrors(data) {
 	let codes = new Set();
-	let data = data1.slice(0, data1.length);
-	for (let i in data1) {
-		codes.add(data1[i].parkCode);
-	}
-	for (let i in data2) {
-		if (!codes.has(data2[i].parkCode)) {
-			data.push(data2[i]);
+	for (let i in data) {
+		if (data[i] === undefined || data[i] == undefined) {
+			console.log('undefined!');
+		} else {
+			if (data[i].parkCode === undefined || data[i].parkCode == undefined) {
+				console.log('no parkCode!');
+			} else {
+				if (codes.has(data[i].parkCode)) {
+					console.log('repeat!');
+				} else {
+					codes.add(data[i].parkCode);
+				}
+			}
 		}
 	}
-	//console.log(data1.length + '+' + data2.length + '=' + data.length);
-	return data;
 }
 
 class ParkSearch {
 	
 	constructor() {
+		this.dict_park_info = {};
 		this.dict_activity_IDs = {};
 		this.dict_topic_IDs = {};
 		this.states = [];
@@ -89,6 +93,11 @@ class ParkSearch {
 	}
 	
 	async init() {
+		
+		let parks = (await makeReq('/parks', {limit : 750})).data;
+		for (let i in parks) {
+			this.dict_park_info[parks[i].parkCode] = parks[i];
+		}
 		let activities = (await makeReq('/activities')).data;
 		for (let i in activities) {
 			this.dict_activity_IDs[activities[i]['name']] = activities[i]['id'];
@@ -106,18 +115,15 @@ class ParkSearch {
 		let topicIDs = Object.values(this.topics);
 		for (let i in activityIDs) {
 			let activityData = (await makeReq('/activities/parks', {id : activityIDs[i]})).data[0].parks;
-			//incompleteData = combineData(incompleteData, activityData);
-			incompleteData = combineData(activityData, incompleteData);
+			incompleteData = combineData(incompleteData, activityData);
 		}
 		for (let i in topicIDs) {
 			let topicData = (await makeReq('/topics/parks', {id : topicIDs[i]})).data[0].parks;
 			incompleteData = combineData(incompleteData, topicData);
 		}
 		for (let i in incompleteData) {
-			let completeData = (await makeReq('/parks', {parkCode : incompleteData[i].parkCode})).data;
-			data = combineData(data, completeData);
+			data.push(this.dict_park_info[incompleteData[i].parkCode]);
 		}
-		//console.log('after activities and topics: ' + data.length);
 		if (this.states.length > 0) {
 			if (this.terms.length > 0) {
 				for (let i in this.states) {
@@ -137,10 +143,11 @@ class ParkSearch {
 				for (let i in this.terms) {
 					data = combineData(data, (await makeReq('/parks', {q : this.terms[i]})).data);
 				}
-			} else {
+			} else if (data.length == 0) {
 				data = combineData(data, (await makeReq('/parks')).data);
 			}
 		}
+		//checkErrors(data);
 		return data;
 	}
 	
