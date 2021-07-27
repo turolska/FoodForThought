@@ -15,12 +15,18 @@
     <script src="map_code.js"></script>
     
     <script type="text/javascript">
+        var time = 1;
+        var oldDistance=0;
 
         
-      function getData(states,terms){
+      function getData(states,terms,username){
           var method;
           var param;
-          if(states[0] != null){
+          if(states == null){
+              method = "addTerm";
+              param = terms;
+          }
+          else if(states[0] != null){
               method = "addState";
               param = states;
           }
@@ -32,9 +38,12 @@
           $.ajax({
           url : '/map',
           method : 'GET',
-          data: { method: method, param1: param },
+          data: { method: method, param1: param, param2: time },
           success : function(data){
              addMarkers(data);
+             if(username.length > 0){
+                 document.getElementById("response").innerHTML = 'Got response for ' + username;
+             }
           },
         
           error: function(err){
@@ -43,13 +52,63 @@
      });
       
     }
+    
+    function getTweetData(username){
+        var method='getTweetKeywords';
+        var param=username;
+        $.ajax({
+        url : '/map',
+        method : 'GET',
+        data: { method: method, param1: param, param2: 1 },
+        success : function(data){
+            if (data.length > 0){
+                getData([null],data,username);
+            }
+            else{
+                document.getElementById("response").innerHTML = 'Not enough tweets to find National Park';
+            }
+           
+        },
+      
+        error: function(err){
+          console.log('Failed');
+        }
+   });
+    
+  }
+    
+    function showDialog() {
+      document.getElementById("dialog").innerHTML = '<p>Enter Twitter Username:</p><input type="text" id="myInput"><button onclick="getUsername()">Find National Parks</button><button onclick="hideTool()">Hide Tool</button>';
+    }
+    function getUsername(){
+        var username = document.getElementById("myInput").value;
+        document.getElementById("response").innerHTML = 'Loading';
+        getTweetData(username);
+    }
+    function hideTool(){
+        document.getElementById("dialog").innerHTML = '';
+        document.getElementById("response").innerHTML = '';
+    }
+    
+    
     function preSendhandler(event) {
         if (event.data.context.skills['main skill'].user_defined != null){
           var states = event.data.context.skills['main skill'].user_defined.state;
-          states = mapStateInits(states);
+          if (states != null){
+              states = mapStateInits(states);
+          }
           var terms = event.data.context.skills['main skill'].user_defined.term;
+          var distance = event.data.context.skills['main skill'].user_defined.distance;
+          
+          if(oldDistance != distance){
+              addMarkers("",distance);
+              oldDistance = distance;
+          }
+          else{
+              getData(states, terms, '');
+          }
 
-          getData(states, terms);
+          time+=1;
         }
     }
     
@@ -79,6 +138,10 @@
     <!--The div element for the map -->
     <div id="map"></div>
     <!--<button onclick="getData()">Try it</button>-->
+    <button onclick="showDialog()">Find a National Park from Twitter Username</button>
+    <p id="dialog"></p>
+    <p id="response"></p>
+
     <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
     <script
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5Nm3cFCJDL8W3Q9bo2-dq_40eV61REO8&callback=initMap&libraries=&v=weekly"

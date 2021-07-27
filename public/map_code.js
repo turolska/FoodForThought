@@ -3,12 +3,16 @@
 // focusable markers.
 var map;
 let markers = [];
-
+var total_data;
+var curr_lat;
+var curr_lng;
 
 function successFunction(position)
 {
     var lat = position.coords.latitude;
     var lng = position.coords.longitude;
+    curr_lat = lat;
+    curr_lng = lng;
     map = new google.maps.Map(document.getElementById("map"), {
      zoom: 5,
      center: { lat: lat, lng: lng },
@@ -38,18 +42,22 @@ function displayLocation(latitude,longitude){
   }
 }
 
-function distance(lat1,lon1,lat2,lon2){
-  var R = 3958.8; // Earth's radius in miles
-  return Math.acos(Math.sin(lat1)*Math.sin(lat2) +
-                  Math.cos(lat1)*Math.cos(lat2) *
-                  Math.cos(lon2-lon1)) * R;
+function distance_func(lat1,lon1,lat2,lon2){
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
 
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-//    if (distance(user.lat, user.lon, post.lat, post.lon) <= desiredRadiusInKm){
-//      // return true;
-//    } else {
-//      // return false;
-//    }
+    const d = R * c; // in metres
+    const distance = 0.00062 * d;
+    return distance;
+
 }
 
 function getDataLocation(state){
@@ -58,7 +66,7 @@ function getDataLocation(state){
     method : 'GET',
     data: { method: "addState", param1: state},
     success : function(data){
-       addMarkers(data);
+       addMarkers(data,0);
     },
   
     error: function(err){
@@ -150,12 +158,29 @@ function deleteMarkers() {
   setMapOnAll(null);
   markers = [];
 }
+
+function findWithinDistance(data, distance){
+    var finalData = new Array();
+    for(let i=0; i<data.length;i++){
+        if(distance_func(curr_lat,curr_lng,parseFloat(data[i].latitude),parseFloat(data[i].longitude)) < distance){
+            finalData.push(data[i]);
+        }
+    }
+    return finalData;
+}
   
-function addMarkers(data){
+function addMarkers(data, distance){
   // Set LatLng and title text for the markers. The first marker (Boynton Pass)
   // receives the initial focus when tab is pressed. Use arrow keys to
   // move between markers; press tab again to cycle through the map controls.
-  //data = data.slice(0, 10);
+    if(data.length > 0){
+        total_data = data;
+        data = data.slice(0, 25);
+    }
+    else{
+        data = findWithinDistance(total_data, distance)
+    }
+    
     deleteMarkers();
     
     var parks = [];
@@ -163,20 +188,35 @@ function addMarkers(data){
     for (i=0;i<data.length;i++){
         //if (data[i]['price_range_num'] <= price){
         var act = "";
-        for(a=0;a<data[i]['activities'].length;a++){
-            act+=data[i]['activities'][a]['name'];
-            if (a<data[i]['activities'].length - 1){
-                act+=", ";
+        if(data[i]['activities'] != null){
+            for(a=0;a<data[i]['activities'].length;a++){
+                act+=data[i]['activities'][a]['name'];
+                if (a<data[i]['activities'].length - 1){
+                    act+=", ";
+                }
             }
         }
+        
+        var top = "";
+        if(data[i]['topics'] != null){
+            for(a=0;a<data[i]['topics'].length;a++){
+                top+=data[i]['topics'][a]['name'];
+                if (a<data[i]['topics'].length - 1){
+                    top+=", ";
+                }
+            }
+        }
+        
         var slide = "";
-        for(im=0;im<data[i]['images'].length;im++){
-            var img = '<div class="mySlides fade">' +
-              '<div class="numbertext">'+String(im+1)+' / '+String(data[i]['images'].length)+'</div>'+
-              '<img src="'+data[i]['images'][im]['url']+'" style="width:100%">'+
-              '<div class="text">'+data[i]['images'][im]['caption']+'</div>'+
-            '</div>';
-            slide+=img;
+        if(data[i]['images'] != null){
+            for(im=0;im<data[i]['images'].length;im++){
+                var img = '<div class="mySlides fade">' +
+                  '<div class="numbertext">'+String(im+1)+' / '+String(data[i]['images'].length)+'</div>'+
+                  '<img src="'+data[i]['images'][im]['url']+'" style="width:100%">'+
+                  '<div class="text">'+data[i]['images'][im]['caption']+'</div>'+
+                '</div>';
+                slide+=img;
+            }
         }
         var phoneNum = "";
         if (data[i]['contacts']['phoneNumbers'][0] != null){
@@ -190,6 +230,7 @@ function addMarkers(data){
           '<div id="bodyContent">' +
           "<p><b>Description:</b> "+data[i]['description']+"</p>" +
         "<p><b>Activities:</b> "+act+"</p>" +
+        "<p><b>Topics:</b> "+top+"</p>" +
         phoneNum +
         "<p><b>Weather:</b> "+data[i]['weatherInfo']+"</p>" +
         "<p><b>Website:</b> "+"<a href="+data[i]['url']+">"+ data[i]['url']+'</a>'+"</p>" +
