@@ -2,6 +2,9 @@
 const express = require('express'),
       server = express()
 
+var tweet = require('./tweets');
+
+
 //const app = express();
 //app.use(express.static('public')); /* this line tells Express to use the public folder as our static folder from which we can serve static files*/
 server.use(express.static('public'));
@@ -25,22 +28,29 @@ server.get('/',(request,response)=>{
 //});
 
 server.get('/map',(request,response)=>{
-    req_data = request.query
+    req_data = request.query;
+    if(req_data['param2'] == 1){
+        search.clearAll();
+    }
     switch(req_data['method']) {
         case 'addTerm':
-            console.log(req_data['param1']);
             req_data['param1'].forEach(element => search.addTerm(element));
+            search.search().then(res => {response.json(res);});
             break;
         case 'addState':
-            console.log(req_data['param1']);
             req_data['param1'].forEach(element => search.addState(element));
+            search.search().then(res => {response.json(res);});
+            break;
+            
+        case 'getTweetKeywords':
+            tweet.getTweets(req_data['param1']).then(res => {response.json(res)});
             break;
 
         default:
         // code block
     }
     
-    search.search().then(res => {response.json(res);});
+    
 });
 
 //Binding to localhost://3000
