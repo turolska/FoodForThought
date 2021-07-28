@@ -3,9 +3,10 @@
 // focusable markers.
 var map;
 let markers = [];
-var total_data;
 var curr_lat;
 var curr_lng;
+var oldData;
+var doneDist = false;
 
 function successFunction(position)
 {
@@ -55,8 +56,8 @@ function distance_func(lat1,lon1,lat2,lon2){
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
     const d = R * c; // in metres
-    const distance = 0.00062 * d;
-    return distance;
+    const dist = 0.00062 * d;
+    return dist;
 
 }
 
@@ -169,16 +170,21 @@ function findWithinDistance(data, distance){
     return finalData;
 }
   
-function addMarkers(data, distance){
+function addMarkers(data){
   // Set LatLng and title text for the markers. The first marker (Boynton Pass)
   // receives the initial focus when tab is pressed. Use arrow keys to
   // move between markers; press tab again to cycle through the map controls.
-    if(data.length > 0){
-        total_data = data;
+    if(data.length == 0){
+        data = oldData;
+    }
+    else{
+        oldData = data;
+    }
+    if(doneDist || distance == null || distance == 0){
         data = data.slice(0, 25);
     }
     else{
-        data = findWithinDistance(total_data, distance)
+        data = findWithinDistance(data, distance)
     }
     
     deleteMarkers();
@@ -190,7 +196,14 @@ function addMarkers(data, distance){
         var act = "";
         if(data[i]['activities'] != null){
             for(a=0;a<data[i]['activities'].length;a++){
+                var hasTerm = termsSet.has(data[i]['activities'][a]['name']);
+                if(hasTerm){
+                    act+='<mark>';
+                }
                 act+=data[i]['activities'][a]['name'];
+                if(hasTerm){
+                    act+='</mark>';
+                }
                 if (a<data[i]['activities'].length - 1){
                     act+=", ";
                 }
@@ -200,7 +213,14 @@ function addMarkers(data, distance){
         var top = "";
         if(data[i]['topics'] != null){
             for(a=0;a<data[i]['topics'].length;a++){
+                var hasTerm = termsSet.has(data[i]['topics'][a]['name']);
+                if(hasTerm){
+                    top+='<mark>';
+                }
                 top+=data[i]['topics'][a]['name'];
+                if(hasTerm){
+                    top+='</mark>';
+                }
                 if (a<data[i]['topics'].length - 1){
                     top+=", ";
                 }

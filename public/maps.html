@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Add Map</title>
+    <title>Off The Grid</title>
     <!--<link rel="stylesheet" href="slideshow_style.css"> -->
     <style type="text/css">
       /* Set the size of the div element that contains the map */
@@ -11,12 +11,54 @@
         width: 100%;
         /* The width is the width of the web page */
       }
+    
+    /* Add a black background color to the top navigation */
+    .topnav {
+      background-color: #003568;
+      overflow: hidden;
+      padding: 0px 0px 0px 5px;
+      color: #f2f2f2;
+    }
+
+    /* Style the links inside the navigation bar */
+    .topnav a {
+      float: left;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+      
+    }
+
+    h1 {
+      font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+      font-size: 24px;
+      font-style: normal;
+      font-variant: normal;
+      font-weight: 700;
+      line-height: 26.4px;
+      
+      text-align: left;
+    }
+
+    .floating {
+      display: table;
+      float: right;
+      height: 70px;
+      width: 500px;
+
+    }
+    .floating p {
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
+    }
     </style>
     <script src="map_code.js"></script>
     
     <script type="text/javascript">
         var time = 1;
-        var oldDistance=0;
+        var termsSet = new Set();
+        var distance;
 
         
       function getData(states,terms,username){
@@ -29,6 +71,7 @@
           else if(states[0] != null){
               method = "addState";
               param = states;
+              doneDist = true;
           }
           else{
               method = "addTerm";
@@ -56,13 +99,15 @@
     function getTweetData(username){
         var method='getTweetKeywords';
         var param=username;
+        termsSet = new Set();
         $.ajax({
         url : '/map',
         method : 'GET',
         data: { method: method, param1: param, param2: 1 },
         success : function(data){
             if (data.length > 0){
-                getData([null],data,username);
+                data.forEach(element => termsSet.add(element));
+                getData([null],data,username,0);
             }
             else{
                 document.getElementById("response").innerHTML = 'Not enough tweets to find National Park';
@@ -77,18 +122,18 @@
     
   }
     
-    function showDialog() {
-      document.getElementById("dialog").innerHTML = '<p>Enter Twitter Username:</p><input type="text" id="myInput"><button onclick="getUsername()">Find National Parks</button><button onclick="hideTool()">Hide Tool</button>';
-    }
+    //function showDialog() {
+     // document.getElementById("dialog").innerHTML = '<p>Enter Twitter Username:</p><input type="text" id="myInput"><button onclick="getUsername()">Find National Parks</button><button onclick="hideTool()">Hide Tool</button>';
+    //}
     function getUsername(){
         var username = document.getElementById("myInput").value;
-        document.getElementById("response").innerHTML = 'Loading';
+        //document.getElementById("response").innerHTML = 'Loading';
         getTweetData(username);
     }
-    function hideTool(){
-        document.getElementById("dialog").innerHTML = '';
-        document.getElementById("response").innerHTML = '';
-    }
+    //function hideTool(){
+      //  document.getElementById("dialog").innerHTML = '';
+      //  document.getElementById("response").innerHTML = '';
+   // }
     
     
     function preSendhandler(event) {
@@ -98,15 +143,17 @@
               states = mapStateInits(states);
           }
           var terms = event.data.context.skills['main skill'].user_defined.term;
-          var distance = event.data.context.skills['main skill'].user_defined.distance;
-          
-          if(oldDistance != distance){
-              addMarkers("",distance);
-              oldDistance = distance;
+          if (terms != null){
+              terms.forEach(element => termsSet.add(element));
+          }
+          distance = event.data.context.skills['main skill'].user_defined.distance;
+          if(states == null && terms == null){
+              addMarkers("")
           }
           else{
               getData(states, terms, '');
           }
+          
 
           time+=1;
         }
@@ -134,17 +181,31 @@
 
   </head>
   <body>
-    <h3>Find a National Park</h3>
+    <div class="topnav">
+      <div style="float: left">
+        <h1> <span style='font-size:50px;'>&#9968;</span> OFF THE GRID </h1>
+      </div>
+      <div class="floating">
+        <p>
+        <label>Enter Twitter Username:</label>
+        <!-- <button onclick="showDialog()">Find a National Park from Twitter Username</button>  -->
+        <input type="text" id="myInput"></input>
+        <button onclick="getUsername()">Find National Parks</button>
+        <!-- <button onclick="hideTool()">Hide Tool</button> -->
+        <!-- <div id="response"></div> -->
+      </div>
+      
+    </div>
+
+    
     <!--The div element for the map -->
     <div id="map"></div>
     <!--<button onclick="getData()">Try it</button>-->
-    <button onclick="showDialog()">Find a National Park from Twitter Username</button>
-    <p id="dialog"></p>
-    <p id="response"></p>
+    
 
     <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5Nm3cFCJDL8W3Q9bo2-dq_40eV61REO8&callback=initMap&libraries=&v=weekly"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCJH21Fp1uRbNCL6hlQlkAWnfb0okj2fFo&callback=initMap&libraries=&v=weekly"
       async
     ></script>
     <script src="slideshow.js"></script>
